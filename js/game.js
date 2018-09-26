@@ -1,28 +1,22 @@
-var config = {
-    type: Phaser.AUTO,
-    width: 512,
-    height: 342,
-    scene: {
-        preload: preload,
-        create: create,
-        update: update
-    }
-};
-
-var game = new Phaser.Game(config);
-
-function makeSpriteObservable (spriteToChange)
+function makeSpriteObservable (spriteToChange, defaultScale, defaultAngle, hoverScale, hoverAngle)
 {
-    /* Make it so spriteToChange can be clicked in
-     * order to bring it to the center of the screen,
-     * in full scale, for observation. Also applies
-     * hover effects on the sprite to indicate
-     * clickability.
+    /* Modify a "large" sprite so that it is
+     * viewable in a room at a smaller scale,
+     * has a cursor/pointer hover effect, and
+     * can be clicked to view the unscaled sprite.
+     * In other words, it's basically a thumbnail
+     * you ca click on to enlarge.
      *
      * Arguments:
      *   spriteToChange: Phaser v3 sprite to apply effects to.
-     *   hoverScale: optional...
-     *   hoverAngle: optional...
+     *   defaultScale: optional. The size/scale of the sprite by default.
+     *      Think of this as the "thumbnail" scale relative to the actual
+     *      image.
+     *   defaultAngle: optional...
+     *   hoverScale: optional. The size of the sprite when the cursor/pointer
+     *      is over it. This helps indicate that an object is clickable. Scale
+     *      relative to full image size.
+     *   hoverAngle: optional. Change the angle when hovered.
      */
 
     originalScale = spriteToChange.scaleX;
@@ -30,8 +24,15 @@ function makeSpriteObservable (spriteToChange)
     originalX = spriteToChange.x;
     originalY = spriteToChange.y;
 
-    hoverScale = 0.33;
-    hoverAngle = 0;
+    defaultScale = defaultScale || 0.26;
+    defaultAngle = defaultAngle || 3;
+
+    hoverScale = hoverScale || 0.33;
+    hoverAngle = hoverAngle || 0;
+
+    // Tweak the default "thumbnail"
+    spriteToChange.setScale(defaultScale);
+    spriteToChange.setAngle(defaultAngle);
 
     // Make it so when the cursor is hovered over spriteToChange
     // the cursor graphic changes to a custom hand cursor image
@@ -56,8 +57,8 @@ function makeSpriteObservable (spriteToChange)
         // Condition makes it so the hover effect doesn't occur
         // when the sprite is being observed already.
         if (this.scaleX != 1) {
-            this.setScale(originalScale);
-            this.setAngle(originalAngle);
+            this.setScale(defaultScale);
+            this.setAngle(defaultAngle);
         }
     });
 
@@ -70,8 +71,8 @@ function makeSpriteObservable (spriteToChange)
             this.setAngle(0);
             this.setPosition(256, 171);  // center
         } else {
-            this.setScale(originalScale);
-            this.setAngle(originalAngle);
+            this.setScale(defaultScale);
+            this.setAngle(defaultAngle);
             this.setPosition(originalX, originalY);
         }
         game.canvas.style.cursor = "url(assets/input/cursors/pointer.cur), pointer";
@@ -81,32 +82,41 @@ function makeSpriteObservable (spriteToChange)
 }
 
 
-function preload ()
-{
-    this.load.image('frame', 'assets/frame.png');
-    this.load.image('roomShade', 'assets/room-shade.png');
-    this.load.image('baileyPinup', 'assets/bailey-pinup.png');
+class FirstRoom extends Phaser.Scene {
+    constructor ()
+    {
+        super({ key: 'FirstRoom', active: true });
+    }
+
+    preload ()
+    {
+        this.load.image('frame', 'assets/frame.png');
+        this.load.image('roomShade', 'assets/room-shade.png');
+        this.load.image('baileyPinup', 'assets/bailey-pinup.png');
+    }
+
+    create ()
+    {
+        this.add.image(256, 171, 'frame');
+        this.add.image(256, 171, 'roomShade');
+
+        // Cursor
+        this.input.setDefaultCursor('url(assets/input/cursors/pointer.cur), pointer');
+
+        // Bailey Jay pinup poster shows off the observation effect of simply
+        // showing the picture at full size at center screen.
+        this.posterButton = this.add.sprite(106, 86, 'baileyPinup');
+        makeSpriteObservable(this.posterButton);
+    }
 }
 
-function create ()
-{
-    this.add.image(256, 171, 'frame');
-    this.add.image(256, 171, 'roomShade');
 
-    // Cursor
-    this.input.setDefaultCursor('url(assets/input/cursors/pointer.cur), pointer');
+// Runtime!
+var config = {
+    type: Phaser.AUTO,
+    width: 512,
+    height: 342,
+    scene: [ FirstRoom ],
+};
 
-    // Bailey Jay pinup poster shows off the observation effect of simply
-    // showing the picture at full size at center screen.
-    this.posterButton = this.add.sprite(106, 86, 'baileyPinup');
-    this.posterButton.setScale(0.26);
-    this.posterButton.setAngle(3);
-    makeSpriteObservable(this.posterButton);
-}
-
-function update ()
-{
-
-}
-
-
+var game = new Phaser.Game(config);
